@@ -3,45 +3,104 @@ package com.example.questforcalm
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.room.Room
+import com.example.questforcalm.database.QFCDatabase
+import com.example.questforcalm.dao.MoodLogDao
+import com.example.questforcalm.models.MoodLog
 import com.example.questforcalm.ui.theme.QuestForCalmTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.util.Calendar
 
 class MainActivity : ComponentActivity() {
+
+    private lateinit var database: QFCDatabase
+    private lateinit var moodLogDao: MoodLogDao
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+
+        database = Room.databaseBuilder(
+            applicationContext,
+            QFCDatabase::class.java,
+            "qfc_database"
+        ).build()
+
+        moodLogDao = database.moodLogDao()
+
         setContent {
             QuestForCalmTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                MoodLogScreen(moodLogDao)
             }
         }
     }
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+fun MoodLogScreen(moodLogDao: MoodLogDao) {
+    val moodScore = remember { mutableStateOf(5) }
+    val description = remember { mutableStateOf("") }
+    val coroutineScope = rememberCoroutineScope()
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    QuestForCalmTheme {
-        Greeting("Android")
+    Column(
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxSize()
+    ) {
+        Text(text = "How's your mood today?", style = MaterialTheme.typography.titleLarge)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Slider(
+            value = moodScore.value.toFloat(),
+            onValueChange = { moodScore.value = it.toInt() },
+            valueRange = 1f..10f,
+            steps = 8
+        )
+        Text("Mood Score: ${moodScore.value}")
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = description.value,
+            onValueChange = { description.value = it },
+            label = { Text("Description") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        Button(
+            onClick = {
+                coroutineScope.launch(Dispatchers.IO) {
+                    val currentDate = Calendar.getInstance().time
+                    val moodLog = MoodLog(
+                        date = currentDate.toString(),
+                        moodScore = moodScore.value,
+                        description = description.value
+                    )
+                    moodLogDao.insertMoodLog(moodLog)
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Save Mood")
+        }
     }
 }

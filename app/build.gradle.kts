@@ -44,6 +44,8 @@ android {
 dependencies {
     // Room database
     implementation(libs.androidx.room.runtime)
+    ksp("androidx.room:room-compiler:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
     // navigation
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.serialization.json)
