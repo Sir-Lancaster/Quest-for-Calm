@@ -6,10 +6,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -79,7 +82,8 @@ fun MoodLogScreen(moodLogDao: MoodLogDao, navController: NavHostController) {
 
     Column(
         modifier = Modifier
-            .padding(16.dp)
+            .padding(WindowInsets.safeDrawing.asPaddingValues()) // Respect system insets
+            .padding(16.dp) // Additional padding for content
             .fillMaxSize()
     ) {
         Text(text = "How's your mood today?", style = MaterialTheme.typography.titleLarge)
