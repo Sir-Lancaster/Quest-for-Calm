@@ -1,5 +1,6 @@
 package com.example.questforcalm
 
+import android.icu.util.Calendar
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -20,14 +21,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
 import com.example.questforcalm.database.QFCDatabase
 import com.example.questforcalm.dao.MoodLogDao
 import com.example.questforcalm.models.MoodLog
+import com.example.questforcalm.ui.screens.MoodHistoryScreen
 import com.example.questforcalm.ui.theme.QuestForCalmTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.util.Calendar
 
 class MainActivity : ComponentActivity() {
 
@@ -47,14 +52,27 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             QuestForCalmTheme {
-                MoodLogScreen(moodLogDao)
+                val navController = rememberNavController()
+                AppNavigator(navController, moodLogDao)
             }
         }
     }
 }
 
 @Composable
-fun MoodLogScreen(moodLogDao: MoodLogDao) {
+fun AppNavigator(navController: NavHostController, moodLogDao: MoodLogDao) {
+    NavHost(navController = navController, startDestination = "moodLogScreen") {
+        composable("moodLogScreen") {
+            MoodLogScreen(moodLogDao, navController)
+        }
+        composable("moodHistoryScreen") {
+            MoodHistoryScreen(moodLogDao)
+        }
+    }
+}
+
+@Composable
+fun MoodLogScreen(moodLogDao: MoodLogDao, navController: NavHostController) {
     val moodScore = remember { mutableStateOf(5) }
     val description = remember { mutableStateOf("") }
     val coroutineScope = rememberCoroutineScope()
@@ -101,6 +119,16 @@ fun MoodLogScreen(moodLogDao: MoodLogDao) {
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Save Mood")
+        }
+        Button(
+            onClick = {
+                navController.navigate("moodHistoryScreen")
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp)
+        ) {
+            Text("View Mood History")
         }
     }
 }
