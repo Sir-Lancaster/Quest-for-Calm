@@ -33,6 +33,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.questforcalm.database.QFCDatabase
 import com.example.questforcalm.dao.MoodLogDao
+import com.example.questforcalm.dao.QuestDao
 import com.example.questforcalm.dao.UserProgressDao
 import com.example.questforcalm.models.MoodLog
 import com.example.questforcalm.ui.screens.MoodHistoryScreen
@@ -46,6 +47,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var database: QFCDatabase
     private lateinit var moodLogDao: MoodLogDao
     private lateinit var userProgressDao: UserProgressDao
+    private lateinit var questDao: QuestDao
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,29 +65,45 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    """
+            CREATE TABLE IF NOT EXISTS `quests` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `title` TEXT NOT NULL,
+                `description` TEXT NOT NULL,
+                `xpReward` INTEGER NOT NULL,
+                `isCompleted` INTEGER NOT NULL DEFAULT 0
+            )
+            """
+                )
+            }
+        }
 
         database = Room.databaseBuilder(
             applicationContext,
             QFCDatabase::class.java,
             "qfc_database"
         )
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .build()
 
         moodLogDao = database.moodLogDao()
         userProgressDao = database.userProgressDao()
+        questDao = database.questDao()
 
         setContent {
             QuestForCalmTheme {
                 val navController = rememberNavController()
-                AppNavigator(navController, moodLogDao, userProgressDao)
+                AppNavigator(navController, moodLogDao, userProgressDao, questDao)
             }
         }
     }
 }
 
 @Composable
-fun AppNavigator(navController: NavHostController, moodLogDao: MoodLogDao, userProgressDao: UserProgressDao) {
+fun AppNavigator(navController: NavHostController, moodLogDao: MoodLogDao, userProgressDao: UserProgressDao, questDao: QuestDao) {
     NavHost(navController = navController, startDestination = "moodLogScreen") {
         composable("moodLogScreen") {
             MoodLogScreen(moodLogDao, navController)
@@ -94,7 +112,7 @@ fun AppNavigator(navController: NavHostController, moodLogDao: MoodLogDao, userP
             MoodHistoryScreen(moodLogDao)
         }
         composable("questScreen") {
-            QuestScreen(userProgressDao)
+            QuestScreen(userProgressDao, questDao)
         }
     }
 }
@@ -124,6 +142,7 @@ fun MoodLogScreen(moodLogDao: MoodLogDao, navController: NavHostController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        Text("Journal Entry", style = MaterialTheme.typography.titleMedium)
         OutlinedTextField(
             value = description.value,
             onValueChange = { description.value = it },
